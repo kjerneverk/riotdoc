@@ -1,0 +1,50 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# Build and test artifacts
+coverage/
+node_modules/
+dist/tests/
+tests/
+output/
+*.tgz
+
+# IDE and editor files
+.DS_Store
+.vscode/
+.cursor/
+
+# Config files
+.eslintrc.json
+.eslintrc
+.prettierrc
+babel.config.js
+cloudbuild.yaml
+jest.config.ts
+jest.config.js
+tsconfig.json
+yarn.lock
+.yarnrc.yml
+.npmignore
+.gitignore
+.nvmrc
+eslint.config.mjs
+nodemon.json
+vite.config.ts
+vitest.config.ts
+.markdown-doctest-setup.mjs
+
+# Development files
+.github/
+.yarn/
+src/
+docs/
+guide/
+*.log
+.env
+.env.*
+
+# Tool-specific files
+.kodrdriv-test-cache.json
+
+# Documentation (we keep LICENSE)
+README.md
