@@ -11,3 +11,4 @@ input/
 **/.DS_Store
 package-lock.json
 output/
+.kodrdriv*
