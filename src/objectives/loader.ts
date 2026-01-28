@@ -38,9 +38,27 @@ function parseObjectivesMarkdown(content: string): DocumentObjectives {
     }
     
     // Extract secondary goals
-    const secondaryMatch = content.match(/##\s*Secondary\s+Goals\s*\n([\s\S]*?)(?=\n##|$)/i);
-    if (secondaryMatch) {
-        const goals = secondaryMatch[1].matchAll(/^[-*]\s+(.+)$/gm);
+    // Use line-by-line parsing to avoid polynomial regex
+    const lines = content.split('\n');
+    const secondaryLines: string[] = [];
+    let inSecondary = false;
+    
+    for (const line of lines) {
+        if (/^##\s*Secondary\s+Goals$/i.test(line)) {
+            inSecondary = true;
+            continue;
+        }
+        if (inSecondary && /^##/.test(line)) {
+            break;
+        }
+        if (inSecondary) {
+            secondaryLines.push(line);
+        }
+    }
+    
+    if (secondaryLines.length > 0) {
+        const sectionContent = secondaryLines.join('\n');
+        const goals = sectionContent.matchAll(/^[-*]\s+(.+)$/gm);
         for (const goal of goals) {
             const text = goal[1].trim().replace(/^_|_$/g, "");
             if (text && !text.startsWith("Add")) {
@@ -50,9 +68,26 @@ function parseObjectivesMarkdown(content: string): DocumentObjectives {
     }
     
     // Extract key takeaways
-    const takeawaysMatch = content.match(/##\s*Key\s+Takeaways\s*\n([\s\S]*?)(?=\n##|$)/i);
-    if (takeawaysMatch) {
-        const takeaways = takeawaysMatch[1].matchAll(/^\d+\.\s+(.+)$/gm);
+    // Use line-by-line parsing to avoid polynomial regex
+    const takeawayLines: string[] = [];
+    let inTakeaways = false;
+    
+    for (const line of lines) {
+        if (/^##\s*Key\s+Takeaways$/i.test(line)) {
+            inTakeaways = true;
+            continue;
+        }
+        if (inTakeaways && /^##/.test(line)) {
+            break;
+        }
+        if (inTakeaways) {
+            takeawayLines.push(line);
+        }
+    }
+    
+    if (takeawayLines.length > 0) {
+        const sectionContent = takeawayLines.join('\n');
+        const takeaways = sectionContent.matchAll(/^\d+\.\s+(.+)$/gm);
         for (const takeaway of takeaways) {
             const text = takeaway[1].trim().replace(/^_|_$/g, "");
             if (text && !text.startsWith("Define")) {

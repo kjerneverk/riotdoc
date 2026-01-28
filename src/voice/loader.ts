@@ -107,18 +107,53 @@ export function parseStyleRulesMarkdown(content: string): {
     const dontItems: string[] = [];
     
     // Find ## Do section
-    const doMatch = content.match(/##\s*Do\s*\n([\s\S]*?)(?=\n##|$)/i);
-    if (doMatch) {
-        const items = doMatch[1].matchAll(/^[-*]\s+(.+)$/gm);
+    // Use line-by-line parsing to avoid polynomial regex
+    const lines = content.split('\n');
+    const doLines: string[] = [];
+    let inDo = false;
+    
+    for (const line of lines) {
+        if (/^##\s*Do$/i.test(line)) {
+            inDo = true;
+            continue;
+        }
+        if (inDo && /^##/.test(line)) {
+            break;
+        }
+        if (inDo) {
+            doLines.push(line);
+        }
+    }
+    
+    if (doLines.length > 0) {
+        const sectionContent = doLines.join('\n');
+        const items = sectionContent.matchAll(/^[-*]\s+(.+)$/gm);
         for (const item of items) {
             doItems.push(item[1].trim());
         }
     }
     
     // Find ## Don't section
-    const dontMatch = content.match(/##\s*Don'?t\s*\n([\s\S]*?)(?=\n##|$)/i);
-    if (dontMatch) {
-        const items = dontMatch[1].matchAll(/^[-*]\s+(.+)$/gm);
+    // Use line-by-line parsing to avoid polynomial regex
+    const dontLines: string[] = [];
+    let inDont = false;
+    
+    for (const line of lines) {
+        if (/^##\s*Don'?t$/i.test(line)) {
+            inDont = true;
+            continue;
+        }
+        if (inDont && /^##/.test(line)) {
+            break;
+        }
+        if (inDont) {
+            dontLines.push(line);
+        }
+    }
+    
+    if (dontLines.length > 0) {
+        const sectionContent = dontLines.join('\n');
+        const items = sectionContent.matchAll(/^[-*]\s+(.+)$/gm);
         for (const item of items) {
             dontItems.push(item[1].trim());
         }

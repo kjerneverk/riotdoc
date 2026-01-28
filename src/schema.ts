@@ -9,7 +9,7 @@ export const DocumentConfigSchema = z.object({
     updatedAt: z.coerce.date(),
     targetWordCount: z.number().optional(),
     audience: z.string().optional(),
-    metadata: z.record(z.unknown()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const VoiceConfigSchema = z.object({
