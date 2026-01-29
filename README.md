@@ -37,6 +37,20 @@ riotdoc revise
 riotdoc export
 ```
 
+## MCP Server
+
+RiotDoc includes an MCP server for AI assistant integration. See [guide/mcp.md](guide/mcp.md) for details.
+
+```bash
+# Available as
+riotdoc-mcp
+```
+
+## Documentation
+
+- [User Guide](guide/index.md) - Complete usage guide
+- [MCP Server](guide/mcp.md) - Model Context Protocol integration
+
 ## License
 
 Apache-2.0

@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
-import { chmod } from 'node:fs/promises';
+import { chmod, cp } from 'node:fs/promises';
 import path from 'node:path';
 
 export default defineConfig({
@@ -10,18 +10,23 @@ export default defineConfig({
                 index: "src/index.ts",
                 cli: "src/cli/cli.ts",
                 bin: "src/cli/bin.ts",
+                "mcp-server": "src/mcp/server.ts",
             },
             name: "riotdoc",
             formats: ["es"],
         },
         rollupOptions: {
             external: [
+                "@modelcontextprotocol/sdk",
+                "@modelcontextprotocol/sdk/server/mcp.js",
+                "@modelcontextprotocol/sdk/server/stdio.js",
                 "commander",
                 "chalk",
                 "js-yaml",
                 "marked",
                 "inquirer",
                 "zod",
+                "yaml",
                 "riotprompt",
                 "agentic",
                 "execution",
@@ -42,11 +47,21 @@ export default defineConfig({
             },
             plugins: [
                 {
-                    name: 'chmod-bin',
+                    name: 'chmod-bin-and-copy-prompts',
                     writeBundle: async () => {
-                        // Make bin executable after build
+                        // Make bin and mcp-server executable after build
                         const binPath = path.resolve('dist/bin.js');
+                        const mcpServerPath = path.resolve('dist/mcp-server.js');
                         await chmod(binPath, 0o755);
+                        await chmod(mcpServerPath, 0o755);
+                        
+                        // Copy prompt templates to dist
+                        const promptsSource = path.resolve('src/mcp/prompts');
+                        const promptsDest = path.resolve('dist/mcp/prompts');
+                        await cp(promptsSource, promptsDest, { 
+                            recursive: true,
+                            filter: (src) => src.endsWith('.md')
+                        });
                     }
                 }
             ]
