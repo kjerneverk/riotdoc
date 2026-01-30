@@ -12,3 +12,4 @@ input/
 package-lock.json
 output/
 .kodrdriv*
+.playwright-mcp/

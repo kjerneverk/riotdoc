@@ -22,7 +22,8 @@ const Breadcrumbs = ({ docSections }: BreadcrumbsProps) => {
     const categoryNames: Record<string, string> = {
         'guide': 'Guides',
         'integration': 'Integration',
-        'developer': 'Developer'
+        'developer': 'Developer',
+        'mcp': 'MCP'
     };
 
     const categoryName = section.category ? categoryNames[section.category] : null;
