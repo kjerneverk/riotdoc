@@ -9,7 +9,16 @@ import type { McpTool, ToolResult, ToolExecutionContext } from '../types.js';
 
 // Tool imports
 import { createTool, executeCreate } from './create.js';
-import { outlineTool, executeOutline } from './outline.js';
+import { 
+    insertSectionTool, 
+    renameSectionTool, 
+    deleteSectionTool, 
+    moveSectionTool,
+    executeInsertSection,
+    executeRenameSection,
+    executeDeleteSection,
+    executeMoveSection
+} from './outline.js';
 import { draftTool, executeDraft } from './draft.js';
 import { statusTool, executeStatus } from './status.js';
 import { spellcheckTool, executeSpellcheck } from './spellcheck.js';
@@ -31,8 +40,14 @@ export async function executeTool(
         switch (toolName) {
             case 'riotdoc_create':
                 return await executeCreate(args, context);
-            case 'riotdoc_outline':
-                return await executeOutline(args, context);
+            case 'riotdoc_outline_insert_section':
+                return await executeInsertSection(args, context);
+            case 'riotdoc_outline_rename_section':
+                return await executeRenameSection(args, context);
+            case 'riotdoc_outline_delete_section':
+                return await executeDeleteSection(args, context);
+            case 'riotdoc_outline_move_section':
+                return await executeMoveSection(args, context);
             case 'riotdoc_draft':
                 return await executeDraft(args, context);
             case 'riotdoc_status':
@@ -68,7 +83,10 @@ export async function executeTool(
  */
 export const tools: McpTool[] = [
     createTool,
-    outlineTool,
+    insertSectionTool,
+    renameSectionTool,
+    deleteSectionTool,
+    moveSectionTool,
     draftTool,
     statusTool,
     spellcheckTool,

@@ -234,6 +234,8 @@ export type TimelineEventType =
     | "revision_added"
     | "evidence_added"
     | "exported"
+    | "version_incremented"
+    | "version_published"
     | "narrative_chunk"
     | "checkpoint_created"
     | "checkpoint_restored";
