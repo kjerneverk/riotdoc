@@ -7,6 +7,20 @@ import type { ToolExecutionContext, ToolResult } from '../types.js';
  
 
 /**
+ * Format current timestamp as ISO 8601 string
+ */
+export function formatTimestamp(): string {
+    return new Date().toISOString();
+}
+
+/**
+ * Format current date as YYYY-MM-DD
+ */
+export function formatDate(): string {
+    return new Date().toISOString().split('T')[0];
+}
+
+/**
  * Helper to create a basic config object from MCP args
  */
 export function createConfig(args: any, _context: ToolExecutionContext): any {
