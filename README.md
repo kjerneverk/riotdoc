@@ -1,18 +1,37 @@
 # RiotDoc
 
-Template-driven document creation with AI assistance, full history tracking, and version control.
+**A document is bigger than its output.**
+
+RiotDoc treats documents as **constructs**—capturing not just the output but the construction of meaning. Track research, evidence, and conversations. Make your documents truly yours, not just pattern-matched from training data.
+
+Part of [Kjerneverk](https://kjerneverk.github.io) - structured formats for working with generative AI.
+
+## Why RiotDoc?
+
+### Before: Blank Canvas or "Close Enough"
+
+- **Word processor blank canvas**: Fire up Word and start typing. No structure, no process.
+- **LLM "close enough" generation**: Ask an LLM to generate a document that "hits the mark, but not quite"—pattern-matched, not constructed from your thinking.
+- **Lost context**: Even when you write yourself, you lose the research, evidence, and conversations that shaped the document.
+
+### After: Documents as Process
+
+- **Construction of meaning**: Capture how you build understanding from sources and references
+- **Full history tracking**: Timeline, conversation history, research, evidence, draft versions
+- **Process documentation**: Like academic papers show their recipe, all documents track their creation
+- **Tool independence**: Works with any model or no model at all. From CLI, via MCP, or through future GUI applications.
 
 ## Overview
 
-RiotDoc is a structured document creation system that guides you through creating high-quality documents using:
+RiotDoc guides you through creating high-quality documents using:
 
 - **Template-driven workflows** - Templates define questions, approaches, and document structure
 - **Conversational guidance** - Ask 2-5 questions at a time, not overwhelming forms
-- **Multiple approaches** - Choose the workflow that fits your situation
-- **Full history tracking** - Every decision and conversation captured
+- **Multiple approaches** - Choose the workflow that fits your situation (Quick & Direct, Structured, Research-Based)
+- **Full history tracking** - Every decision and conversation captured in `.history/`
 - **Version control** - Track evolution from draft (v0.x) to published (v1.0)
 - **Checkpoints** - Create snapshots for experimentation and recovery
-- **AI assistance** - Varying levels from full generation to light editing
+- **Varying AI assistance** - From full generation to light editing to no AI at all
 
 ## Installation
 
