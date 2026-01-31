@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   publish-npm:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8-cores
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -25,14 +25,26 @@ jobs:
       - run: npm install -g npm@latest
       - run: npm install --verbose --foreground-scripts
         timeout-minutes: 10
-      - name: Determine npm tag
+      - name: Determine npm tag and publish strategy
         id: npm-tag
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          IS_RELEASE="${{ github.event_name == 'release' }}"
+          
           if [[ "$VERSION" == *"-"* ]]; then
             echo "tag=dev" >> $GITHUB_OUTPUT
+            echo "should_publish=true" >> $GITHUB_OUTPUT
           else
             echo "tag=latest" >> $GITHUB_OUTPUT
+            # Only publish production versions on release events
+            if [[ "$IS_RELEASE" == "true" ]]; then
+              echo "should_publish=true" >> $GITHUB_OUTPUT
+            else
+              echo "should_publish=false" >> $GITHUB_OUTPUT
+              echo "⚠️  Skipping publish: Production version detected on non-release push"
+            fi
           fi
-      - run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
+      - name: Publish to npm
+        if: steps.npm-tag.outputs.should_publish == 'true'
+        run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
 
