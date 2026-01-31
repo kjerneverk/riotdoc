@@ -5,7 +5,7 @@ RiotDoc is a template-driven document creation system that guides you through cr
 ## Installation
 
 ```bash
-npm install -g @riotprompt/riotdoc
+npm install -g @kjerneverk/riotdoc
 ```
 
 ## Quick Start
