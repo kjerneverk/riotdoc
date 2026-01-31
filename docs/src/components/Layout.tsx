@@ -30,6 +30,8 @@ const Layout = ({ docSections }: LayoutProps) => {
             <nav id="nav">
                 <div className="nav-container">
                     <div className="nav-title">
+                        <a href="https://kjerneverk.github.io" className="kjerneverk-link">Kjerneverk</a>
+                        <span className="nav-separator">/</span>
                         <Link to="/">RiotDoc</Link>
                     </div>
                     <ul className="nav-links">

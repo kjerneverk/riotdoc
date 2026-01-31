@@ -78,11 +78,28 @@ a:hover {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-right: 2em;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
 }
 
 .nav-title a {
     color: #fff;
     text-decoration: none;
+}
+
+.nav-title .kjerneverk-link {
+    opacity: 0.7;
+    font-size: 0.85em;
+}
+
+.nav-title .kjerneverk-link:hover {
+    opacity: 1;
+}
+
+.nav-title .nav-separator {
+    opacity: 0.5;
+    font-weight: 300;
 }
 
 /* Nav Icons (GitHub, NPM) */
