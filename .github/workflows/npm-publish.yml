@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   publish-npm:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -22,28 +22,44 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org/
-      - run: npm install -g npm@latest
-      - run: npm install --verbose --foreground-scripts
-        timeout-minutes: 10
       - name: Determine npm tag and publish strategy
         id: npm-tag
         run: |
           VERSION=$(node -p "require('./package.json').version")
           IS_RELEASE="${{ github.event_name == 'release' }}"
-          
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+
           if [[ "$VERSION" == *"-"* ]]; then
             echo "tag=dev" >> $GITHUB_OUTPUT
             echo "should_publish=true" >> $GITHUB_OUTPUT
+            # Add timestamp and SHA to pre-release version (e.g., 1.5.5-dev.0 -> 1.5.5-dev.20260131210612.ab169e2)
+            BASE_VERSION="${VERSION%%-*}"
+            NEW_VERSION="${BASE_VERSION}-dev.${TIMESTAMP}.${SHORT_SHA}"
+            echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+            echo "📦 Publishing pre-release version: ${NEW_VERSION}"
           else
             echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
             # Only publish production versions on release events
             if [[ "$IS_RELEASE" == "true" ]]; then
               echo "should_publish=true" >> $GITHUB_OUTPUT
+              echo "📦 Publishing production version: ${VERSION}"
             else
               echo "should_publish=false" >> $GITHUB_OUTPUT
               echo "⚠️  Skipping publish: Production version detected on non-release push"
             fi
           fi
+      - run: npm install -g npm@latest
+        if: steps.npm-tag.outputs.should_publish == 'true'
+      - run: npm install --verbose --foreground-scripts
+        if: steps.npm-tag.outputs.should_publish == 'true'
+        timeout-minutes: 10
+      - name: Update package.json version for pre-release
+        if: steps.npm-tag.outputs.should_publish == 'true' && steps.npm-tag.outputs.tag == 'dev'
+        run: |
+          node -e "const pkg = require('./package.json'); pkg.version = '${{ steps.npm-tag.outputs.version }}'; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');"
+          echo "Updated package.json to version ${{ steps.npm-tag.outputs.version }}"
       - name: Publish to npm
         if: steps.npm-tag.outputs.should_publish == 'true'
         run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
