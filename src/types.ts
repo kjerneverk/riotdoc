@@ -30,6 +30,23 @@ export type DocumentStatus =
     | "exported";   // Published/exported
 
 /**
+ * Version history entry
+ */
+export interface VersionHistoryEntry {
+    /** Version number (e.g., "0.1", "1.0") */
+    version: string;
+    
+    /** When this version was created */
+    timestamp: string;
+    
+    /** Draft file path for this version */
+    draftPath?: string;
+    
+    /** Notes about this version */
+    notes?: string;
+}
+
+/**
  * Core document configuration
  */
 export interface DocumentConfig {
@@ -44,6 +61,15 @@ export interface DocumentConfig {
     
     /** Current status */
     status: DocumentStatus;
+    
+    /** Current version (e.g., "0.1", "1.0") */
+    version: string;
+    
+    /** Whether document is published (v1.0+) or draft (v0.x) */
+    published: boolean;
+    
+    /** Version history */
+    versionHistory: VersionHistoryEntry[];
     
     /** Creation timestamp */
     createdAt: Date;
@@ -191,4 +217,138 @@ export interface RiotDoc {
     
     /** Path to document workspace */
     workspacePath: string;
+}
+
+// ============================================================================
+// Timeline and History Types
+// Copied and adapted from RiotPlan (src/types.ts lines 264-413)
+// ============================================================================
+
+/**
+ * Timeline event types for document lifecycle
+ */
+export type TimelineEventType =
+    | "document_created"
+    | "outline_created"
+    | "draft_created"
+    | "revision_added"
+    | "evidence_added"
+    | "exported"
+    | "version_incremented"
+    | "version_published"
+    | "narrative_chunk"
+    | "checkpoint_created"
+    | "checkpoint_restored";
+
+/**
+ * Base timeline event structure
+ */
+export interface TimelineEvent {
+    /** ISO 8601 timestamp */
+    timestamp: string;
+
+    /** Event type identifier */
+    type: TimelineEventType;
+
+    /** Event-specific data */
+    data: Record<string, any>;
+}
+
+/**
+ * Narrative chunk event - captures raw conversational input
+ */
+export interface NarrativeChunkEvent extends TimelineEvent {
+    type: "narrative_chunk";
+    data: {
+        /** Raw user input */
+        content: string;
+
+        /** Source of input */
+        source?: "typing" | "voice" | "paste" | "import";
+
+        /** Context about what prompted this */
+        context?: string;
+
+        /** Who is speaking */
+        speaker?: "user" | "assistant" | "system";
+    };
+}
+
+/**
+ * Checkpoint created event
+ */
+export interface CheckpointCreatedEvent extends TimelineEvent {
+    type: "checkpoint_created";
+    data: {
+        /** Checkpoint name (kebab-case) */
+        name: string;
+
+        /** Description of checkpoint */
+        message: string;
+
+        /** Path to checkpoint snapshot (relative) */
+        snapshotPath?: string;
+
+        /** Path to prompt context (relative) */
+        promptPath?: string;
+    };
+}
+
+/**
+ * Checkpoint restored event
+ */
+export interface CheckpointRestoredEvent extends TimelineEvent {
+    type: "checkpoint_restored";
+    data: {
+        /** Name of restored checkpoint */
+        checkpoint: string;
+
+        /** Timestamp of original checkpoint */
+        restoredFrom: string;
+    };
+}
+
+/**
+ * File snapshot in checkpoint
+ */
+export interface FileSnapshot {
+    /** Whether file exists */
+    exists: boolean;
+
+    /** File content (if exists) */
+    content?: string;
+}
+
+/**
+ * Checkpoint metadata structure
+ */
+export interface CheckpointMetadata {
+    /** Checkpoint name */
+    name: string;
+
+    /** When created (ISO 8601) */
+    timestamp: string;
+
+    /** User-provided description */
+    message: string;
+
+    /** Current status */
+    status: string;
+
+    /** Snapshot of document files */
+    snapshot: {
+        timestamp: string;
+        config?: FileSnapshot;
+        outline?: FileSnapshot;
+        currentDraft?: FileSnapshot;
+    };
+
+    /** Context information */
+    context: {
+        /** List of .md files at checkpoint */
+        filesChanged: string[];
+
+        /** Timeline events since last checkpoint */
+        eventsSinceLastCheckpoint: number;
+    };
 }

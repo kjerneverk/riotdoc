@@ -1,12 +1,13 @@
 {
   "name": "@riotprompt/riotdoc",
-  "version": "1.0.3-dev.0",
+  "version": "1.0.4",
   "description": "Structured document creation with AI assistance",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "riotdoc": "./dist/bin.js"
+    "riotdoc": "./dist/bin.js",
+    "riotdoc-mcp": "./dist/mcp-server.js"
   },
   "exports": {
     ".": {
@@ -24,7 +25,12 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src",
     "precommit": "npm run build && npm run lint && npm run test",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "npm run clean && npm run build",
+    "docs:dev": "cd docs && cp ../README.md public/ && npm install && npm run dev",
+    "docs:build": "cd docs && cp ../README.md public/ && npm install && npm run build",
+    "docs:preview": "cd docs && npm run preview",
+    "docs:test": "cd docs && npm run test",
+    "docs:coverage": "cd docs && npm run coverage"
   },
   "keywords": [
     "document",
@@ -42,7 +48,8 @@
     "url": "https://github.com/kjerneverk/riotdoc"
   },
   "dependencies": {
-    "@theunwalked/cardigantime": "^0.0.22",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@utilarium/cardigantime": "^0.0.24",
     "@types/inquirer": "^9.0.9",
     "chalk": "^5.4.1",
     "commander": "^14.0.2",
@@ -53,9 +60,9 @@
     "zod": "^4.3.6"
   },
   "peerDependencies": {
-    "@riotprompt/agentic": "^1.0.2",
+    "@riotprompt/agentic": "^1.0.4",
     "@riotprompt/execution": "^1.0.1",
-    "@riotprompt/riotprompt": "^1.0.1"
+    "@riotprompt/riotprompt": "^1.0.5"
   },
   "peerDependenciesMeta": {
     "@riotprompt/agentic": {
