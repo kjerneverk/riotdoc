@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
-    "@theunwalked/cardigantime": "^0.0.22",
+    "@utilarium/cardigantime": "^0.0.24",
     "@types/inquirer": "^9.0.9",
     "chalk": "^5.4.1",
     "commander": "^14.0.2",
