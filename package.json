@@ -1,6 +1,6 @@
 {
-  "name": "@riotprompt/riotdoc",
-  "version": "1.0.4",
+  "name": "@kjerneverk/riotdoc",
+  "version": "1.0.5",
   "description": "Structured document creation with AI assistance",
   "type": "module",
   "main": "./dist/index.js",
@@ -60,18 +60,18 @@
     "zod": "^4.3.6"
   },
   "peerDependencies": {
-    "@riotprompt/agentic": "^1.0.4",
-    "@riotprompt/execution": "^1.0.1",
-    "@riotprompt/riotprompt": "^1.0.5"
+    "@kjerneverk/agentic": "^1.0.5",
+    "@kjerneverk/execution": "^1.0.4",
+    "@kjerneverk/riotprompt": "^1.0.6"
   },
   "peerDependenciesMeta": {
-    "@riotprompt/agentic": {
+    "@kjerneverk/agentic": {
       "optional": true
     },
-    "@riotprompt/execution": {
+    "@kjerneverk/execution": {
       "optional": true
     },
-    "@riotprompt/riotprompt": {
+    "@kjerneverk/riotprompt": {
       "optional": true
     }
   },

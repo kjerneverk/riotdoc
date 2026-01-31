@@ -17,7 +17,7 @@ RiotDoc is a structured document creation system that guides you through creatin
 ## Installation
 
 ```bash
-npm install -g @riotprompt/riotdoc
+npm install -g @kjerneverk/riotdoc
 ```
 
 ## Quick Start

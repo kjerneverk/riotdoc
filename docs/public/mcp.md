@@ -7,7 +7,7 @@ RiotDoc includes a Model Context Protocol (MCP) server that exposes document cre
 ### Installation
 
 ```bash
-npm install -g @riotprompt/riotdoc
+npm install -g @kjerneverk/riotdoc
 ```
 
 ### Build from Source

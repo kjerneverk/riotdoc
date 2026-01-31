@@ -7,7 +7,7 @@ RiotDoc is a structured document creation tool with AI assistance. It helps you 
 ## Installation
 
 ```bash
-npm install -g @riotprompt/riotdoc
+npm install -g @kjerneverk/riotdoc
 ```
 
 ## Quick Start
