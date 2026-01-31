@@ -60,9 +60,9 @@
     "zod": "^4.3.6"
   },
   "peerDependencies": {
-    "@riotprompt/agentic": "^1.0.2",
+    "@riotprompt/agentic": "^1.0.4",
     "@riotprompt/execution": "^1.0.1",
-    "@riotprompt/riotprompt": "^1.0.4"
+    "@riotprompt/riotprompt": "^1.0.5"
   },
   "peerDependenciesMeta": {
     "@riotprompt/agentic": {
