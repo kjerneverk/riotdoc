@@ -1,6 +1,6 @@
 {
   "name": "@kjerneverk/riotdoc",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Structured document creation with AI assistance",
   "type": "module",
   "main": "./dist/index.js",
@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
-    "@utilarium/cardigantime": "^0.0.24",
+    "@utilarium/cardigantime": "^0.0.25",
     "@types/inquirer": "^9.0.9",
     "chalk": "^5.4.1",
     "commander": "^14.0.2",
@@ -62,7 +62,7 @@
   "peerDependencies": {
     "@kjerneverk/agentic": "^1.0.5",
     "@kjerneverk/execution": "^1.0.4",
-    "@kjerneverk/riotprompt": "^1.0.7"
+    "@kjerneverk/riotprompt": "^1.0.8"
   },
   "peerDependenciesMeta": {
     "@kjerneverk/agentic": {
