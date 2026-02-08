@@ -1,6 +1,6 @@
 {
   "name": "@kjerneverk/riotdoc",
-  "version": "1.0.7-dev.0",
+  "version": "1.0.7",
   "description": "Structured document creation with AI assistance",
   "type": "module",
   "main": "./dist/index.js",
