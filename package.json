@@ -1,6 +1,6 @@
 {
   "name": "@kjerneverk/riotdoc",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Structured document creation with AI assistance",
   "type": "module",
   "main": "./dist/index.js",
@@ -61,8 +61,8 @@
   },
   "peerDependencies": {
     "@kjerneverk/agentic": "^1.0.5",
-    "@kjerneverk/execution": "^1.0.4",
-    "@kjerneverk/riotprompt": "^1.0.9"
+    "@kjerneverk/execution": "^1.0.6",
+    "@kjerneverk/riotprompt": "^1.0.10"
   },
   "peerDependenciesMeta": {
     "@kjerneverk/agentic": {
