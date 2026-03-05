@@ -62,7 +62,7 @@
   "peerDependencies": {
     "@kjerneverk/agentic": "^1.0.8",
     "@kjerneverk/execution": "^1.0.7",
-    "@kjerneverk/riotprompt": "^1.0.13"
+    "@kjerneverk/riotprompt": "^1.0.14"
   },
   "peerDependenciesMeta": {
     "@kjerneverk/agentic": {
