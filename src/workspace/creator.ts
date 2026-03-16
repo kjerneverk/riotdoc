@@ -47,6 +47,9 @@ export async function createWorkspace(options: CreateWorkspaceOptions): Promise<
         title,
         type,
         status: "idea",
+        version: "0.1",
+        published: false,
+        versionHistory: [],
         createdAt: new Date(),
         updatedAt: new Date(),
     };

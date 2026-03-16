@@ -2,41 +2,30 @@
  * Spellcheck Tool
  */
 
- 
+import { z } from 'zod';
 import type { McpTool, ToolResult, ToolExecutionContext } from '../types.js';
- 
 
 export const spellcheckTool: McpTool = {
     name: 'riotdoc_spellcheck',
     description:
         'Run spell checking on document content. ' +
         'Checks drafts and other markdown files for spelling errors.',
-    inputSchema: {
-        type: 'object',
-        properties: {
-            path: {
-                type: 'string',
-                description: 'Path to document workspace (defaults to current directory)',
+    schema: {
+        path: z.string().optional().describe('Path to document workspace (defaults to current directory)'),
+        file: z.string().optional().describe('Specific file to check (omit to check all drafts)'),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        const workspacePath = (args.path as string) || process.cwd();
+
+        return {
+            success: true,
+            data: {
+                action: 'pending',
+                path: workspacePath,
+                file: args.file,
+                note: 'Spellcheck implementation pending',
             },
-            file: {
-                type: 'string',
-                description: 'Specific file to check (omit to check all drafts)',
-            },
-        },
+            message: 'Spellcheck command - implementation pending',
+        };
     },
 };
-
-export async function executeSpellcheck(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    const workspacePath = args.path || process.cwd();
-    
-    return {
-        success: true,
-        data: {
-            action: 'pending',
-            path: workspacePath,
-            file: args.file,
-            note: 'Spellcheck implementation pending',
-        },
-        message: 'Spellcheck command - implementation pending',
-    };
-}

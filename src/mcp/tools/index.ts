@@ -4,82 +4,44 @@
  * Provides MCP tool interfaces for riotdoc commands
  */
 
- 
 import type { McpTool, ToolResult, ToolExecutionContext } from '../types.js';
 
 // Tool imports
-import { createTool, executeCreate } from './create.js';
+import { createTool } from './create.js';
 import { 
     insertSectionTool, 
     renameSectionTool, 
     deleteSectionTool, 
     moveSectionTool,
-    executeInsertSection,
-    executeRenameSection,
-    executeDeleteSection,
-    executeMoveSection
 } from './outline.js';
-import { draftTool, executeDraft } from './draft.js';
-import { statusTool, executeStatus } from './status.js';
-import { spellcheckTool, executeSpellcheck } from './spellcheck.js';
-import { cleanupTool, executeCleanup } from './cleanup.js';
-import { exportTool, executeExport } from './export.js';
-import { reviseTool, executeRevise } from './revise.js';
- 
+import { draftTool } from './draft.js';
+import { statusTool } from './status.js';
+import { spellcheckTool } from './spellcheck.js';
+import { cleanupTool } from './cleanup.js';
+import { exportTool } from './export.js';
+import { reviseTool } from './revise.js';
+import { addNarrativeTool } from './narrative.js';
+import {
+    checkpointCreateTool,
+    checkpointListTool,
+    checkpointShowTool,
+    checkpointRestoreTool,
+    historyShowTool,
+} from './history.js';
+import {
+    incrementVersionTool,
+    getVersionTool,
+    listVersionsTool,
+} from './version.js';
+import { voiceShowTool, voiceSetTool } from './voice.js';
+import { guidanceAddTool, guidanceListTool, guidanceReadTool } from './guidance.js';
+import { assetRegisterTool, assetListTool, assetPromptTool } from './assets.js';
+import { corpusIndexTool, corpusSearchTool, corpusReadTool } from './corpus.js';
+import { assembleTool } from './assemble.js';
+import { manifestShowTool, manifestAddTool, manifestAssembleTool } from './manifest.js';
 
 /**
- * Base tool executor - wraps command logic
- */
-export async function executeTool(
-    toolName: string,
-    args: Record<string, any>,
-    context: ToolExecutionContext
-): Promise<ToolResult> {
-    try {
-        // Route to specific tool handler
-        switch (toolName) {
-            case 'riotdoc_create':
-                return await executeCreate(args, context);
-            case 'riotdoc_outline_insert_section':
-                return await executeInsertSection(args, context);
-            case 'riotdoc_outline_rename_section':
-                return await executeRenameSection(args, context);
-            case 'riotdoc_outline_delete_section':
-                return await executeDeleteSection(args, context);
-            case 'riotdoc_outline_move_section':
-                return await executeMoveSection(args, context);
-            case 'riotdoc_draft':
-                return await executeDraft(args, context);
-            case 'riotdoc_status':
-                return await executeStatus(args, context);
-            case 'riotdoc_spellcheck':
-                return await executeSpellcheck(args, context);
-            case 'riotdoc_cleanup':
-                return await executeCleanup(args, context);
-            case 'riotdoc_export':
-                return await executeExport(args, context);
-            case 'riotdoc_revise':
-                return await executeRevise(args, context);
-            default:
-                return {
-                    success: false,
-                    error: `Unknown tool: ${toolName}`,
-                };
-        }
-    } catch (error: any) {
-        return {
-            success: false,
-            error: error.message || 'Tool execution failed',
-            context: {
-                tool: toolName,
-                args,
-            },
-        };
-    }
-}
-
-/**
- * Tool definitions array
+ * All registered tools
  */
 export const tools: McpTool[] = [
     createTool,
@@ -93,4 +55,64 @@ export const tools: McpTool[] = [
     cleanupTool,
     exportTool,
     reviseTool,
+    addNarrativeTool,
+    checkpointCreateTool,
+    checkpointListTool,
+    checkpointShowTool,
+    checkpointRestoreTool,
+    historyShowTool,
+    incrementVersionTool,
+    getVersionTool,
+    listVersionsTool,
+    voiceShowTool,
+    voiceSetTool,
+    guidanceAddTool,
+    guidanceListTool,
+    guidanceReadTool,
+    assetRegisterTool,
+    assetListTool,
+    assetPromptTool,
+    corpusIndexTool,
+    corpusSearchTool,
+    corpusReadTool,
+    assembleTool,
+    manifestShowTool,
+    manifestAddTool,
+    manifestAssembleTool,
 ];
+
+/**
+ * Map for O(1) tool lookup by name
+ */
+export const toolMap = new Map<string, McpTool>(
+    tools.map(t => [t.name, t])
+);
+
+/**
+ * Execute a tool by name using Map-based dispatch
+ */
+export async function executeTool(
+    toolName: string,
+    args: Record<string, unknown>,
+    context: ToolExecutionContext
+): Promise<ToolResult> {
+    try {
+        const tool = toolMap.get(toolName);
+        if (!tool) {
+            return {
+                success: false,
+                error: `Unknown tool: ${toolName}`,
+            };
+        }
+        return await tool.execute(args, context);
+    } catch (error: any) {
+        return {
+            success: false,
+            error: error.message || 'Tool execution failed',
+            context: {
+                tool: toolName,
+                args,
+            },
+        };
+    }
+}

@@ -10,41 +10,12 @@ import { z } from "zod";
 import { join } from "node:path";
 import { readFile, writeFile, mkdir, appendFile, readdir } from "node:fs/promises";
 import { formatTimestamp } from "./shared.js";
-import type { ToolResult, ToolExecutionContext } from '../types.js';
+import type { McpTool, ToolResult, ToolExecutionContext } from '../types.js';
 import type { TimelineEvent, CheckpointMetadata } from '../../types.js';
 
 // Re-export for backward compatibility
 export type HistoryEvent = TimelineEvent;
 export type { CheckpointMetadata };
-
-// Tool schemas
-export const CheckpointCreateSchema = z.object({
-    path: z.string().optional().describe("Path to document directory"),
-    name: z.string().describe("Checkpoint name (kebab-case)"),
-    message: z.string().describe("Description of why checkpoint created"),
-    capturePrompt: z.boolean().optional().default(true).describe("Capture conversation context"),
-});
-
-export const CheckpointListSchema = z.object({
-    path: z.string().optional().describe("Path to document directory"),
-});
-
-export const CheckpointShowSchema = z.object({
-    path: z.string().optional().describe("Path to document directory"),
-    checkpoint: z.string().describe("Checkpoint name"),
-});
-
-export const CheckpointRestoreSchema = z.object({
-    path: z.string().optional().describe("Path to document directory"),
-    checkpoint: z.string().describe("Checkpoint name"),
-});
-
-export const HistoryShowSchema = z.object({
-    path: z.string().optional().describe("Path to document directory"),
-    since: z.string().optional().describe("Show events since this ISO timestamp"),
-    eventType: z.string().optional().describe("Filter by event type"),
-    limit: z.number().optional().describe("Maximum number of events to show"),
-});
 
 // Core history functions
 
@@ -99,7 +70,6 @@ async function captureCurrentState(docPath: string): Promise<{
         currentDraft: undefined as { exists: boolean; content?: string } | undefined,
     };
   
-    // Try to read config.json
     try {
         const configContent = await readFile(join(docPath, 'config.json'), 'utf-8');
         snapshot.config = {
@@ -107,14 +77,12 @@ async function captureCurrentState(docPath: string): Promise<{
             exists: true,
         };
         
-        // Extract status from config
         const config = JSON.parse(configContent);
         snapshot.status = config.status || 'unknown';
     } catch {
         snapshot.config = { exists: false };
     }
   
-    // Try to read outline.md
     try {
         const outlineContent = await readFile(join(docPath, 'outline.md'), 'utf-8');
         snapshot.outline = {
@@ -125,7 +93,6 @@ async function captureCurrentState(docPath: string): Promise<{
         snapshot.outline = { exists: false };
     }
   
-    // Try to read current draft (find latest draft file)
     try {
         const draftsDir = join(docPath, 'drafts');
         const draftFiles = await readdir(draftsDir);
@@ -154,7 +121,6 @@ async function captureCurrentState(docPath: string): Promise<{
 async function countEventsSinceLastCheckpoint(docPath: string): Promise<number> {
     const events = await readTimeline(docPath);
   
-    // Find last checkpoint
     let lastCheckpointIndex = -1;
     for (let i = events.length - 1; i >= 0; i--) {
         if (events[i].type === 'checkpoint_created') {
@@ -265,18 +231,17 @@ You can restore to this checkpoint using: \`riotdoc_checkpoint_restore({ checkpo
 
 // Tool implementations
 
-export async function checkpointCreate(args: z.infer<typeof CheckpointCreateSchema>): Promise<string> {
-    const docPath = args.path || process.cwd();
-    const { name, message, capturePrompt } = args;
+async function checkpointCreate(args: Record<string, unknown>): Promise<string> {
+    const docPath = (args.path as string) || process.cwd();
+    const name = args.name as string;
+    const message = args.message as string;
+    const capturePrompt = args.capturePrompt !== false;
   
-    // 1. Create checkpoint directory
     const checkpointDir = join(docPath, '.history', 'checkpoints');
     await mkdir(checkpointDir, { recursive: true });
   
-    // 2. Snapshot current state
     const snapshot = await captureCurrentState(docPath);
   
-    // 3. Save checkpoint metadata
     const checkpoint: CheckpointMetadata = {
         name,
         timestamp: snapshot.timestamp,
@@ -299,12 +264,10 @@ export async function checkpointCreate(args: z.infer<typeof CheckpointCreateSche
         JSON.stringify(checkpoint, null, 2)
     );
   
-    // 4. Capture prompt if requested
     if (capturePrompt) {
         await capturePromptContext(docPath, name, snapshot, message);
     }
   
-    // 5. Log checkpoint event
     const checkpointEvent: TimelineEvent = {
         timestamp: snapshot.timestamp,
         type: 'checkpoint_created',
@@ -320,8 +283,8 @@ export async function checkpointCreate(args: z.infer<typeof CheckpointCreateSche
     return `✅ Checkpoint created: ${name}\n\nLocation: ${docPath}/.history/checkpoints/${name}.json\nPrompt: ${docPath}/.history/prompts/${name}.md\n\nYou can restore this checkpoint later with:\n  riotdoc_checkpoint_restore({ checkpoint: "${name}" })`;
 }
 
-export async function checkpointList(args: z.infer<typeof CheckpointListSchema>): Promise<string> {
-    const docPath = args.path || process.cwd();
+async function checkpointList(args: Record<string, unknown>): Promise<string> {
+    const docPath = (args.path as string) || process.cwd();
     const checkpointDir = join(docPath, '.history', 'checkpoints');
   
     try {
@@ -353,9 +316,10 @@ export async function checkpointList(args: z.infer<typeof CheckpointListSchema>)
     }
 }
 
-export async function checkpointShow(args: z.infer<typeof CheckpointShowSchema>): Promise<string> {
-    const docPath = args.path || process.cwd();
-    const checkpointPath = join(docPath, '.history', 'checkpoints', `${args.checkpoint}.json`);
+async function checkpointShow(args: Record<string, unknown>): Promise<string> {
+    const docPath = (args.path as string) || process.cwd();
+    const checkpointName = args.checkpoint as string;
+    const checkpointPath = join(docPath, '.history', 'checkpoints', `${checkpointName}.json`);
   
     const content = await readFile(checkpointPath, 'utf-8');
     const checkpoint: CheckpointMetadata = JSON.parse(content);
@@ -372,20 +336,20 @@ export async function checkpointShow(args: z.infer<typeof CheckpointShowSchema>)
     output += `## Snapshot\n\n`;
     output += `${formatSnapshot(checkpoint.snapshot)}\n`;
     output += `\n---\n\n`;
-    output += `View full prompt context: ${docPath}/.history/prompts/${args.checkpoint}.md\n`;
-    output += `Restore: riotdoc_checkpoint_restore({ checkpoint: "${args.checkpoint}" })`;
+    output += `View full prompt context: ${docPath}/.history/prompts/${checkpointName}.md\n`;
+    output += `Restore: riotdoc_checkpoint_restore({ checkpoint: "${checkpointName}" })`;
   
     return output;
 }
 
-export async function checkpointRestore(args: z.infer<typeof CheckpointRestoreSchema>): Promise<string> {
-    const docPath = args.path || process.cwd();
-    const checkpointPath = join(docPath, '.history', 'checkpoints', `${args.checkpoint}.json`);
+async function checkpointRestore(args: Record<string, unknown>): Promise<string> {
+    const docPath = (args.path as string) || process.cwd();
+    const checkpointName = args.checkpoint as string;
+    const checkpointPath = join(docPath, '.history', 'checkpoints', `${checkpointName}.json`);
   
     const content = await readFile(checkpointPath, 'utf-8');
     const checkpoint: CheckpointMetadata = JSON.parse(content);
   
-    // Restore files from snapshot
     if (checkpoint.snapshot.config?.exists && checkpoint.snapshot.config.content) {
         await writeFile(join(docPath, 'config.json'), checkpoint.snapshot.config.content);
     }
@@ -395,51 +359,46 @@ export async function checkpointRestore(args: z.infer<typeof CheckpointRestoreSc
     }
   
     if (checkpoint.snapshot.currentDraft?.exists && checkpoint.snapshot.currentDraft.content) {
-        // Restore to drafts directory with checkpoint name
         const draftsDir = join(docPath, 'drafts');
         await mkdir(draftsDir, { recursive: true });
         await writeFile(
-            join(draftsDir, `restored-from-${args.checkpoint}.md`),
+            join(draftsDir, `restored-from-${checkpointName}.md`),
             checkpoint.snapshot.currentDraft.content
         );
     }
   
-    // Log restoration event
     const restoreEvent: TimelineEvent = {
         timestamp: formatTimestamp(),
         type: 'checkpoint_restored',
         data: { 
-            checkpoint: args.checkpoint,
+            checkpoint: checkpointName,
             restoredFrom: checkpoint.timestamp,
         },
     };
     await logEvent(docPath, restoreEvent);
   
-    return `✅ Restored to checkpoint: ${args.checkpoint}\n\nRestored from: ${checkpoint.timestamp}\nStatus: ${checkpoint.status}\n\nFiles restored:\n${checkpoint.context.filesChanged.map((f: string) => `  - ${f}`).join('\n')}`;
+    return `✅ Restored to checkpoint: ${checkpointName}\n\nRestored from: ${checkpoint.timestamp}\nStatus: ${checkpoint.status}\n\nFiles restored:\n${checkpoint.context.filesChanged.map((f: string) => `  - ${f}`).join('\n')}`;
 }
 
-export async function historyShow(args: z.infer<typeof HistoryShowSchema>): Promise<string> {
-    const docPath = args.path || process.cwd();
+async function historyShow(args: Record<string, unknown>): Promise<string> {
+    const docPath = (args.path as string) || process.cwd();
     let events = await readTimeline(docPath);
   
     if (events.length === 0) {
         return 'No history events found.';
     }
   
-    // Filter by timestamp if provided
     if (args.since) {
-        const sinceTime = new Date(args.since).getTime();
+        const sinceTime = new Date(args.since as string).getTime();
         events = events.filter(e => new Date(e.timestamp).getTime() >= sinceTime);
     }
   
-    // Filter by event type if provided
     if (args.eventType) {
-        events = events.filter(e => e.type === args.eventType);
+        events = events.filter(e => e.type === (args.eventType as string));
     }
   
-    // Limit if provided
     if (args.limit) {
-        events = events.slice(-args.limit);
+        events = events.slice(-(args.limit as number));
     }
   
     let output = `# Document History\n\n`;
@@ -454,87 +413,92 @@ export async function historyShow(args: z.infer<typeof HistoryShowSchema>): Prom
     return output;
 }
 
-// Tool executors for MCP
-
-export async function executeCheckpointCreate(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    try {
-        const validated = CheckpointCreateSchema.parse(args);
-        const result = await checkpointCreate(validated);
-        return { success: true, data: { message: result } };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export async function executeCheckpointList(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    try {
-        const validated = CheckpointListSchema.parse(args);
-        const result = await checkpointList(validated);
-        return { success: true, data: { message: result } };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export async function executeCheckpointShow(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    try {
-        const validated = CheckpointShowSchema.parse(args);
-        const result = await checkpointShow(validated);
-        return { success: true, data: { message: result } };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export async function executeCheckpointRestore(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    try {
-        const validated = CheckpointRestoreSchema.parse(args);
-        const result = await checkpointRestore(validated);
-        return { success: true, data: { message: result } };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export async function executeHistoryShow(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    try {
-        const validated = HistoryShowSchema.parse(args);
-        const result = await historyShow(validated);
-        return { success: true, data: { message: result } };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-// Tool definitions for MCP
-import type { McpTool } from '../types.js';
+// Tool definitions
 
 export const checkpointCreateTool: McpTool = {
     name: "riotdoc_checkpoint_create",
     description: "Create a named checkpoint of current document state with prompt capture. Use this at key decision points to save your progress.",
-    inputSchema: CheckpointCreateSchema.shape as any,
+    schema: {
+        path: z.string().optional().describe("Path to document directory"),
+        name: z.string().describe("Checkpoint name (kebab-case)"),
+        message: z.string().describe("Description of why checkpoint created"),
+        capturePrompt: z.boolean().optional().default(true).describe("Capture conversation context"),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        try {
+            const result = await checkpointCreate(args);
+            return { success: true, data: { message: result } };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
 };
 
 export const checkpointListTool: McpTool = {
     name: "riotdoc_checkpoint_list",
     description: "List all checkpoints for a document with timestamps and messages.",
-    inputSchema: CheckpointListSchema.shape as any,
+    schema: {
+        path: z.string().optional().describe("Path to document directory"),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        try {
+            const result = await checkpointList(args);
+            return { success: true, data: { message: result } };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
 };
 
 export const checkpointShowTool: McpTool = {
     name: "riotdoc_checkpoint_show",
     description: "Show detailed information about a specific checkpoint including full snapshot.",
-    inputSchema: CheckpointShowSchema.shape as any,
+    schema: {
+        path: z.string().optional().describe("Path to document directory"),
+        checkpoint: z.string().describe("Checkpoint name"),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        try {
+            const result = await checkpointShow(args);
+            return { success: true, data: { message: result } };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
 };
 
 export const checkpointRestoreTool: McpTool = {
     name: "riotdoc_checkpoint_restore",
     description: "Restore document to a previous checkpoint state. This will overwrite current files with checkpoint snapshot.",
-    inputSchema: CheckpointRestoreSchema.shape as any,
+    schema: {
+        path: z.string().optional().describe("Path to document directory"),
+        checkpoint: z.string().describe("Checkpoint name"),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        try {
+            const result = await checkpointRestore(args);
+            return { success: true, data: { message: result } };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
 };
 
 export const historyShowTool: McpTool = {
     name: "riotdoc_history_show",
     description: "Show document history timeline with all events. Can filter by time, event type, or limit results.",
-    inputSchema: HistoryShowSchema.shape as any,
+    schema: {
+        path: z.string().optional().describe("Path to document directory"),
+        since: z.string().optional().describe("Show events since this ISO timestamp"),
+        eventType: z.string().optional().describe("Filter by event type"),
+        limit: z.number().optional().describe("Maximum number of events to show"),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        try {
+            const result = await historyShow(args);
+            return { success: true, data: { message: result } };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
 };

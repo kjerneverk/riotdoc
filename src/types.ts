@@ -3,9 +3,14 @@
  */
 export type DocumentType = 
     | "blog-post"
+    | "blog-series"
+    | "book"
+    | "essay"
     | "podcast-script"
+    | "work-paper"
     | "technical-doc"
     | "newsletter"
+    | "general"
     | "custom";
 
 /**

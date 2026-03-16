@@ -12,24 +12,8 @@ import { join } from "node:path";
 import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { formatTimestamp } from "./shared.js";
 import { logEvent } from "./history.js";
-import type { ToolResult, ToolExecutionContext } from '../types.js';
+import type { McpTool, ToolResult, ToolExecutionContext } from '../types.js';
 import type { DocumentConfig, VersionHistoryEntry } from '../../types.js';
-
-// Tool schemas
-export const IncrementVersionSchema = z.object({
-    path: z.string().optional().describe("Path to document directory"),
-    type: z.enum(["minor", "major"]).describe("Increment type: 'minor' for v0.x, 'major' for v1.0"),
-    notes: z.string().optional().describe("Notes about this version"),
-    saveDraft: z.boolean().optional().default(true).describe("Save current draft as versioned file"),
-});
-
-export const GetVersionSchema = z.object({
-    path: z.string().optional().describe("Path to document directory"),
-});
-
-export const ListVersionsSchema = z.object({
-    path: z.string().optional().describe("Path to document directory"),
-});
 
 /**
  * Parse version string into major and minor numbers
@@ -55,29 +39,27 @@ function formatVersion(major: number, minor: number): string {
 /**
  * Increment version number
  */
-export async function incrementVersion(args: z.infer<typeof IncrementVersionSchema>): Promise<string> {
-    const docPath = args.path || process.cwd();
+async function incrementVersion(args: Record<string, unknown>): Promise<string> {
+    const docPath = (args.path as string) || process.cwd();
+    const type = args.type as "minor" | "major";
+    const notes = args.notes as string | undefined;
+    const saveDraft = args.saveDraft !== false;
     const configPath = join(docPath, 'config.json');
     
-    // Read current config
     const configContent = await readFile(configPath, 'utf-8');
     const config: DocumentConfig = JSON.parse(configContent);
     
-    // Parse current version
     const current = parseVersion(config.version);
     
-    // Calculate new version
     let newMajor: number;
     let newMinor: number;
     let eventType: "version_incremented" | "version_published";
     
-    if (args.type === 'major') {
-        // Major increment: v0.x → v1.0 or v1.x → v2.0
+    if (type === 'major') {
         newMajor = current.major + 1;
         newMinor = 0;
         eventType = current.major === 0 ? 'version_published' : 'version_incremented';
     } else {
-        // Minor increment: v0.1 → v0.2 or v1.0 → v1.1
         newMajor = current.major;
         newMinor = current.minor + 1;
         eventType = 'version_incremented';
@@ -86,61 +68,53 @@ export async function incrementVersion(args: z.infer<typeof IncrementVersionSche
     const newVersion = formatVersion(newMajor, newMinor);
     const timestamp = formatTimestamp();
     
-    // Save current draft as versioned file if requested
     let draftPath: string | undefined;
-    if (args.saveDraft) {
+    if (saveDraft) {
         const draftsDir = join(docPath, 'drafts');
         await mkdir(draftsDir, { recursive: true });
         
-        // Find current draft file (look for latest draft-*.md)
         const currentDraftPath = join(docPath, 'current-draft.md');
         try {
             const versionedFilename = `draft-v${config.version}.md`;
             draftPath = `drafts/${versionedFilename}`;
             await copyFile(currentDraftPath, join(docPath, draftPath));
         } catch (error: any) {
-            // If current-draft.md doesn't exist, that's okay
             if (error.code !== 'ENOENT') {
                 throw error;
             }
         }
     }
     
-    // Update version history
     const versionEntry: VersionHistoryEntry = {
         version: newVersion,
         timestamp,
         draftPath,
-        notes: args.notes,
+        notes,
     };
     
     config.versionHistory = config.versionHistory || [];
     config.versionHistory.push(versionEntry);
     
-    // Update config
     const oldVersion = config.version;
     config.version = newVersion;
     config.published = newMajor >= 1;
     config.updatedAt = new Date(timestamp);
     
-    // Save updated config
     await writeFile(configPath, JSON.stringify(config, null, 2));
     
-    // Log version event to timeline
     await logEvent(docPath, {
         timestamp,
         type: eventType,
         data: {
             oldVersion,
             newVersion,
-            incrementType: args.type,
+            incrementType: type,
             published: config.published,
             draftPath,
-            notes: args.notes,
+            notes,
         },
     });
     
-    // Build response message
     let message = `✅ Version incremented: v${oldVersion} → v${newVersion}`;
     
     if (eventType === 'version_published') {
@@ -151,8 +125,8 @@ export async function incrementVersion(args: z.infer<typeof IncrementVersionSche
         message += `\n\nDraft saved: ${draftPath}`;
     }
     
-    if (args.notes) {
-        message += `\n\nNotes: ${args.notes}`;
+    if (notes) {
+        message += `\n\nNotes: ${notes}`;
     }
     
     return message;
@@ -161,14 +135,14 @@ export async function incrementVersion(args: z.infer<typeof IncrementVersionSche
 /**
  * Get current version information
  */
-export async function getVersion(args: z.infer<typeof GetVersionSchema>): Promise<string> {
-    const docPath = args.path || process.cwd();
+async function getVersion(args: Record<string, unknown>): Promise<string> {
+    const docPath = (args.path as string) || process.cwd();
     const configPath = join(docPath, 'config.json');
     
     const configContent = await readFile(configPath, 'utf-8');
     const config: DocumentConfig = JSON.parse(configContent);
     
-    const { major, minor } = parseVersion(config.version);
+    const { major } = parseVersion(config.version);
     const status = major >= 1 ? '📗 Published' : '📝 Draft';
     
     let output = `# Version Information\n\n`;
@@ -183,8 +157,8 @@ export async function getVersion(args: z.infer<typeof GetVersionSchema>): Promis
         
         for (const entry of config.versionHistory) {
             const date = new Date(entry.timestamp).toLocaleDateString();
-            const notes = entry.notes || '-';
-            output += `| v${entry.version} | ${date} | ${notes} |\n`;
+            const entryNotes = entry.notes || '-';
+            output += `| v${entry.version} | ${date} | ${entryNotes} |\n`;
         }
     }
     
@@ -194,8 +168,8 @@ export async function getVersion(args: z.infer<typeof GetVersionSchema>): Promis
 /**
  * List all versions
  */
-export async function listVersions(args: z.infer<typeof ListVersionsSchema>): Promise<string> {
-    const docPath = args.path || process.cwd();
+async function listVersions(args: Record<string, unknown>): Promise<string> {
+    const docPath = (args.path as string) || process.cwd();
     const configPath = join(docPath, 'config.json');
     
     const configContent = await readFile(configPath, 'utf-8');
@@ -227,55 +201,55 @@ export async function listVersions(args: z.infer<typeof ListVersionsSchema>): Pr
     return output;
 }
 
-// Tool executors for MCP
-
-export async function executeIncrementVersion(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    try {
-        const validated = IncrementVersionSchema.parse(args);
-        const result = await incrementVersion(validated);
-        return { success: true, data: { message: result } };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export async function executeGetVersion(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    try {
-        const validated = GetVersionSchema.parse(args);
-        const result = await getVersion(validated);
-        return { success: true, data: { message: result } };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-export async function executeListVersions(args: any, _context: ToolExecutionContext): Promise<ToolResult> {
-    try {
-        const validated = ListVersionsSchema.parse(args);
-        const result = await listVersions(validated);
-        return { success: true, data: { message: result } };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
-// Tool definitions for MCP
-import type { McpTool } from '../types.js';
+// Tool definitions
 
 export const incrementVersionTool: McpTool = {
     name: "riotdoc_increment_version",
     description: "Increment document version number. Use 'minor' for v0.x drafts (0.1→0.2), 'major' to publish (0.x→1.0) or for major updates (1.0→2.0). Optionally saves current draft as versioned file.",
-    inputSchema: IncrementVersionSchema.shape as any,
+    schema: {
+        path: z.string().optional().describe("Path to document directory"),
+        type: z.enum(["minor", "major"]).describe("Increment type: 'minor' for v0.x, 'major' for v1.0"),
+        notes: z.string().optional().describe("Notes about this version"),
+        saveDraft: z.boolean().optional().default(true).describe("Save current draft as versioned file"),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        try {
+            const result = await incrementVersion(args);
+            return { success: true, data: { message: result } };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
 };
 
 export const getVersionTool: McpTool = {
     name: "riotdoc_get_version",
     description: "Get current version information and version history for a document.",
-    inputSchema: GetVersionSchema.shape as any,
+    schema: {
+        path: z.string().optional().describe("Path to document directory"),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        try {
+            const result = await getVersion(args);
+            return { success: true, data: { message: result } };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
 };
 
 export const listVersionsTool: McpTool = {
     name: "riotdoc_list_versions",
     description: "List all versions in document history with timestamps and notes.",
-    inputSchema: ListVersionsSchema.shape as any,
+    schema: {
+        path: z.string().optional().describe("Path to document directory"),
+    },
+    async execute(args: Record<string, unknown>, _context: ToolExecutionContext): Promise<ToolResult> {
+        try {
+            const result = await listVersions(args);
+            return { success: true, data: { message: result } };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
 };

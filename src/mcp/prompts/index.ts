@@ -57,90 +57,179 @@ function fillTemplate(template: string, args: Record<string, string>): string {
 }
 
 /**
- * Get all available prompts
+ * Shared prompt handler: loads template by name, fills placeholders, returns messages.
  */
-export function getPrompts(): McpPrompt[] {
+async function handlePrompt(name: string, args: Record<string, string>): Promise<McpPromptMessage[]> {
+    const template = loadTemplate(name);
+    const filledArgs = { ...args };
+    if (!filledArgs.path) filledArgs.path = 'current directory';
+    if (!filledArgs.base_path) filledArgs.base_path = 'current directory';
+    const content = fillTemplate(template, filledArgs);
     return [
         {
-            name: 'create_document',
-            description: 'Guided workflow for creating a new document workspace',
-            arguments: [
-                {
-                    name: 'name',
-                    description: 'Document workspace name',
-                    required: true,
-                },
-                {
-                    name: 'type',
-                    description: 'Document type (blog-post, podcast-script, technical-doc, newsletter, custom)',
-                    required: true,
-                },
-                {
-                    name: 'title',
-                    description: 'Document title',
-                    required: false,
-                },
-                {
-                    name: 'goal',
-                    description: 'Primary goal',
-                    required: false,
-                },
-                {
-                    name: 'audience',
-                    description: 'Target audience',
-                    required: false,
-                },
-                {
-                    name: 'base_path',
-                    description: 'Base path for workspace',
-                    required: false,
-                },
-            ],
-        },
-        {
-            name: 'outline_document',
-            description: 'Guided workflow for generating or refining document outline',
-            arguments: [
-                {
-                    name: 'path',
-                    description: 'Document workspace path',
-                    required: false,
-                },
-            ],
-        },
-        {
-            name: 'draft_document',
-            description: 'Guided workflow for creating document drafts with AI assistance',
-            arguments: [
-                {
-                    name: 'path',
-                    description: 'Document workspace path',
-                    required: false,
-                },
-                {
-                    name: 'level',
-                    description: 'Assistance level (generate, expand, revise, cleanup, spellcheck)',
-                    required: false,
-                },
-            ],
-        },
-        {
-            name: 'review_document',
-            description: 'Guided workflow for reviewing and providing feedback on drafts',
-            arguments: [
-                {
-                    name: 'path',
-                    description: 'Document workspace path',
-                    required: false,
-                },
-                {
-                    name: 'draft_number',
-                    description: 'Draft number to review',
-                    required: false,
-                },
-            ],
+            role: 'user',
+            content: { type: 'text', text: content },
         },
     ];
+}
+
+/**
+ * All registered prompts
+ */
+export const prompts: McpPrompt[] = [
+    {
+        name: 'create_document',
+        description: 'Guided workflow for creating a new document workspace',
+        arguments: [
+            {
+                name: 'name',
+                description: 'Document workspace name',
+                required: true,
+            },
+            {
+                name: 'type',
+                description: 'Document type (blog-post, podcast-script, technical-doc, newsletter, custom)',
+                required: true,
+            },
+            {
+                name: 'title',
+                description: 'Document title',
+                required: false,
+            },
+            {
+                name: 'goal',
+                description: 'Primary goal',
+                required: false,
+            },
+            {
+                name: 'audience',
+                description: 'Target audience',
+                required: false,
+            },
+            {
+                name: 'base_path',
+                description: 'Base path for workspace',
+                required: false,
+            },
+        ],
+        handler: (args) => handlePrompt('create_document', args),
+    },
+    {
+        name: 'outline_document',
+        description: 'Guided workflow for generating or refining document outline',
+        arguments: [
+            {
+                name: 'path',
+                description: 'Document workspace path',
+                required: false,
+            },
+        ],
+        handler: (args) => handlePrompt('outline_document', args),
+    },
+    {
+        name: 'draft_document',
+        description: 'Guided workflow for creating document drafts with AI assistance',
+        arguments: [
+            {
+                name: 'path',
+                description: 'Document workspace path',
+                required: false,
+            },
+            {
+                name: 'level',
+                description: 'Assistance level (generate, expand, revise, cleanup, spellcheck)',
+                required: false,
+            },
+        ],
+        handler: (args) => handlePrompt('draft_document', args),
+    },
+    {
+        name: 'review_document',
+        description: 'Guided workflow for reviewing and providing feedback on drafts',
+        arguments: [
+            {
+                name: 'path',
+                description: 'Document workspace path',
+                required: false,
+            },
+            {
+                name: 'draft_number',
+                description: 'Draft number to review',
+                required: false,
+            },
+        ],
+        handler: (args) => handlePrompt('review_document', args),
+    },
+    {
+        name: 'draft_with_context',
+        description:
+                'Generate content using the full assembled writing context (voice + guidance + corpus). ' +
+                'Provides system prompt, reference context, task block, and self-check rubric.',
+        arguments: [
+            {
+                name: 'documentType',
+                description: 'Document type (e.g., blog-post, essay, newsletter)',
+                required: false,
+            },
+            {
+                name: 'systemPrompt',
+                description: 'Assembled voice system prompt',
+                required: false,
+            },
+            {
+                name: 'contextBlock',
+                description: 'Assembled guidance and corpus context',
+                required: false,
+            },
+            {
+                name: 'taskBlock',
+                description: 'Task description with intent and instructions',
+                required: false,
+            },
+            {
+                name: 'selfCheckRubric',
+                description: 'Self-check verification rubric',
+                required: false,
+            },
+        ],
+        handler: (args) => handlePrompt('draft_with_context', args),
+    },
+    {
+        name: 'revise_with_context',
+        description:
+                'Revise existing content using the full assembled writing context. ' +
+                'Applies voice profile, guidance, and corpus consistency checks to revision.',
+        arguments: [
+            {
+                name: 'documentType',
+                description: 'Document type (e.g., blog-post, essay, newsletter)',
+                required: false,
+            },
+            {
+                name: 'systemPrompt',
+                description: 'Assembled voice system prompt',
+                required: false,
+            },
+            {
+                name: 'contextBlock',
+                description: 'Assembled guidance and corpus context',
+                required: false,
+            },
+            {
+                name: 'taskBlock',
+                description: 'Revision task description',
+                required: false,
+            },
+        ],
+        handler: (args) => handlePrompt('revise_with_context', args),
+    },
+];
+
+/**
+ * Backward-compatible function
+ */
+export function getPrompts(): McpPrompt[] {
+    return prompts;
 }
 
 /**

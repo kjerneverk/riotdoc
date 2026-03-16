@@ -3,7 +3,7 @@ import { z } from "zod";
 export const DocumentConfigSchema = z.object({
     id: z.string(),
     title: z.string(),
-    type: z.enum(["blog-post", "podcast-script", "technical-doc", "newsletter", "custom"]),
+    type: z.enum(["blog-post", "blog-series", "book", "essay", "podcast-script", "work-paper", "technical-doc", "newsletter", "general", "custom"]),
     status: z.enum(["idea", "outlined", "drafting", "revising", "final", "exported"]),
     createdAt: z.coerce.date(),
     updatedAt: z.coerce.date(),
