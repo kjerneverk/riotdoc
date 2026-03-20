@@ -60,9 +60,9 @@
     "zod": "^4.3.6"
   },
   "peerDependencies": {
-    "@kjerneverk/agentic": "^1.0.8",
-    "@kjerneverk/execution": "^1.0.7",
-    "@kjerneverk/riotprompt": "^1.0.15"
+    "@kjerneverk/agentic": "^1.0.9",
+    "@kjerneverk/execution": "^1.0.8",
+    "@kjerneverk/riotprompt": "^1.0.16"
   },
   "peerDependenciesMeta": {
     "@kjerneverk/agentic": {
