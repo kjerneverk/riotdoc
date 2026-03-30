@@ -1,0 +1,4 @@
+# Scoped @kjerneverk pre-publish updates remain enabled (default).
+# Do not commit package-lock.json; KodrDriv publish expects lockfilePolicy ignore.
+publish:
+  lockfilePolicy: ignore
