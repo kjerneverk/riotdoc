@@ -1,8 +1,4 @@
-# Pre-publish scoped npm-check-updates runs npm install, which can rewrite
-# package-lock.json even when package.json is unchanged. Tree publish only
-# compares package.json before/after to decide whether to auto-commit; if only
-# the lockfile changes, the repo stays dirty and publish fails the git clean
-# precheck. Disable scoped pre-publish updates; run
-# `kodrdriv tree updates @kjerneverk` when you want registry bumps.
+# Scoped @kjerneverk pre-publish updates remain enabled (default).
+# Do not commit package-lock.json; KodrDriv publish expects lockfilePolicy ignore.
 publish:
-  scopedDependencyUpdates: []
+  lockfilePolicy: ignore
